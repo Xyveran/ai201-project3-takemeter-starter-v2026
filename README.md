@@ -42,7 +42,7 @@
 <!-- Your community, and what your classifier sorts posts into. Three or four
      sentences. -->
 
-
+This is a classifier trained on posts from r/LetsTalkMusic. The goal is sort posts into one of these categories: fluff, substantive, or derailing.
 
 ---
 
@@ -56,33 +56,51 @@
 
 ### `label_one`
 
-**Definition:**
+Fluff
+
+**Definition:** Offers an opinion, reaction, or comment about the dicussion topic without providing supporting reasoning, evidence, context, or a distinct argument, and without changing the subject.
 
 **Example 1:**
->
+> I don't know if anyone has ever described James Blunt or Robbie Williams' material as legitimately great art before.
 
 **Example 2:**
->
+> Totally
 
 ### `label_two`
 
-**Definition:**
+Substantive
+
+**Definition:** Contributes relevant information, personal experience, specific examples, reasoning, or a question that develops the discussion topic or responds to another participant.
 
 **Example 1:**
->
+> Robbie Williams isn't just huge in the UK, he's huge all across Europe. He was actually here in Portugal not too long ago, headlining the MEO Kalorama festival, and it sold out straight away. If I'm not mistaken, he lives in the US because he can keep a low profile over there.
 
 **Example 2:**
->
+> It’s made me pay more attention to albums. There are so many songs that in the past I would’ve only heard on the radio or MTV, and I’d enjoy them but I wouldn’t be intrigued enough to spend like $30 (in today’s dollars) to take a chance on the CD. But now I feel free to explore the rest of the album on Spotify without paying one cent on top of the subscription I’m already paying for.
+
+### `label_three`
+
+Derailing
+
+**Definition:** Shifts attention away from the discussion's central topic or argument by introducing an unrelated subject, targeting a person or group with a dismissive remark, or making a personal attack instead of addressing the topic of discussion.
+
+**Example 1:**
+> All I know of Robbie Williams was that banger of a movie they had where he was played by an animated monkey.
+
+**Example 2:**
+> For sure. And Facebook getting fined about children’s usage wss a great thing to see. They call it an agreement and take no fault 😂, but we all know whats really going on.
 
 ### The hardest boundary
 
-**Which two labels:**
+**Which two labels:** Substantive versus Derailing
+
+**Substantive Example:**
+> It's funny so many people chiming in saying "well I still listen to albums" yeah no shit you're on the music enthusiast subreddit. I think everyone here does
+
+This post's main purpose is to draw attention to the selection bias present in responses in the topic "Has streaming made listeners less emotionally attached to individual albums?". It presents additional information that should be considered when engaging in the discussion.
 
 **The decision rule I used every time:**
-<!-- e.g. "If the post names a specific checkable fact, it's `analysis`, even
-     if the tone is heated." -->
-
-
+A post is Derailing when its main contribution redirects attention toward an unrelated subject, dismisses or attacks a person or group, or criticizes participants rather than engaging with the topic being discussed. A post is Fluff when it expresses an unsupported or dismissive opinion about the discussion topic without making that redirect or attack. A post that supplies relevant information or develops an argument is Substantive, even if it is brief or strongly worded.
 
 ---
 
