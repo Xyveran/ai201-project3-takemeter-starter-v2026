@@ -156,16 +156,19 @@ A post is Derailing when its main contribution redirects attention toward an unr
 
 <!-- Your starting model, your settings, and anything you changed and why. -->
 
-**Base model:**
+**Base model:** distilbert-base-uncased
 
-**Settings:** <!-- epochs, learning rate, batch size, seed -->
+**Settings:** EPOCHS = 3, LEARNING_RATE = 2e-5, BATCH_SIZE = 16, SEED = 42<!-- epochs, learning rate, batch size, seed -->
 
 **Anything I changed from the defaults, and why:**
 
-**Split sizes:** <!-- train / val / test, and per-label counts in the test
-split. If a label had fewer than about 8 in test, say so — it explains a lot
-of next unit's variance. -->
-
+**Split sizes:** 
+train 162 / val 35 / test 35
+                 
+| fluff | 42 | 9 | 9 |
+| substantive | 110 | 24 | 24 |
+| derailing | 10 | 2 | 2 |
+<!-- train / val / test, and per-label counts in the test split. If a label had fewer than about 8 in test, say so — it explains a lot of next unit's variance. -->
 
 
 ---
