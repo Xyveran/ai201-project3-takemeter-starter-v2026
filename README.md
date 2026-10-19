@@ -184,17 +184,18 @@ train 162 / val 35 / test 35
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* "organize and label the posts in batch_1 into Fluff, Substantive, or Derailing. Definitions being used are at the top of the file.
+Original thread is titled "Streaming gave me every album ever made, and I stopped discovering music. How do you still dig?"'
+- *What came back:* 23 labeled posts appended onto labels.csv in the same format as the cold-labeled posts I added beforehand. Reasons for choosing a label for close calls alongside.
+- *What I changed:* Nothing here, as I agreed with the verdicts on labelling based on my label definitions.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* "How solid are the labels, definitions, and examples? I need them to hold up for ambiguous posts that sit on boundaries."
+- *What came back:* Constructive criticism of the definitions, and recommendations for rules for deciding between labels.
+- *What I changed:* I tighted up the definitions for each of `fluff` `substantive` and `derailing`, and added information to their definitions to more consistently categorize posts sitting on boundaries.
 
-**Pre-labelling disclosure:**
+**Pre-labelling disclosure:** Around half of the labeled examples were pre-labeled with the use of AI and indicated with a `pre-labeled` note. These examples were all hand reviewed and corrected.
 
 <!-- ═══════════════════════ UNIT 6 — THE TEST ═══════════════════════
 
