@@ -51,63 +51,43 @@ whether you hit them:
 
 ---
 
-## 1.
+## 1. Overall accuracy
 
-<!-- Your criterion. It must name a number. -->
+**Overall accuracy is at least 0.80 on the held-out set, in every one of the three seeds.**
 
-
-
-**Why this target:**
-
-
+**Why this target:** About 0.68 of the data (158 of 232) is marked `substantive`, so a model that always guessed `substantive` would score about 0.68 despite not learning anything. A score of 0.80 is a twelve point gain and would make the classifier useful.
 
 ---
 
-## 2.
+## 2. Per-label F1 for the common labels
 
-<!-- Your criterion. -->
+**`substantive` has an F1 of at least 0.80 and `fluff` has an F1 of at least 0.65, in every seed.**
 
-
-
-**Why this target:**
-
-
+**Why this target:** `substantive` is 68% of my data, so it should be the easiest label and gets the strictest number. `fluff` has 60 examples, so 0.65 is looser: one or two misclassified posts move its F1 several points, and I don't want to miss a target on noise.
 
 ---
 
-## 3.
+## 3. Balanced performance
 
-<!-- Your criterion. -->
+**Macro-averaged F1 is at least 0.65 on the held-out set, in every seed.**
 
-
-
-**Why this target:**
-
-
+**Why this target:** Accuracy hides the lopsidedness of the data. A model can hit 0.78 by being great on `substantive` and ignoring the other two. Macro-F1 weights `fluff` and `derailing` equally with `substantive`, so it can't be passed that way. It is lower than my accuracy target because `derailing` will drag the average down.
 
 ---
 
-## 4.
+## 4. Rare label: `derailing`
 
-<!-- Your criterion. -->
+**`derailing` has a recall of at least 0.50 and an F1 of at least 0.40, in every seed.**
 
-
-
-**Why this target:**
-
-
+**Why this target:** I only have 14 `derailing` examples, and each one is worth a third of recall, which means its F1 will jump between seeds however good the model is. That is why this target is the loosest of the five. I picked recall alongside F1 because for a take-quality tool, missing a derailing post matters more than flagging a post that turns out to be fine. 0.40 F1 is still above what a model that never predicts `derailing` gets, which is 0.
 
 ---
 
-## 5.
+## 5. Dataset balance
 
-<!-- Your criterion. -->
+**Before training, no label is below 10% of the dataset (at least 24 of 232 examples), and `substantive` is no more than 65%.**
 
-
-
-**Why this target:**
-
-
+**Why this target:** Right now this fails: `derailing` is 14 of 232 (6%) and `substantive` is 68%. 14 examples is the root cause of the unstable `derailing` score in criterion 4. I'd rather add at least 10 more `derailing` examples, targeted at the posts I found hardest to label, than lower a number later.
 
 ---
 

@@ -109,19 +109,19 @@ A post is Derailing when its main contribution redirects attention toward an unr
 <!-- Where you collected from, how you labelled, your counts, and three hard
      cases. -->
 
-**Where the posts came from:**
+**Where the posts came from:** Reddit — r/LetsTalkMusic
 
-**How I labelled them:** <!-- Cold first? Pre-labelled with AI and corrected?
-Say so plainly — the disclosure is required, not penalised. -->
+**How I labelled them:** A mixture of cold labeling, and AI pre-labelled posts that were reviewed and corrected.<!-- Cold first? Pre-labelled with AI and corrected? Say so plainly — the disclosure is required, not penalised. -->
 
 **Counts per label:**
 
 | Label | Count | Share |
 |---|---|---|
-|  |  |  |
-|  |  |  |
-|  |  |  |
-| **Total** |  | 100% |
+| substantive | 158 | 0.68 |
+| fluff | 60 | 0.26 |
+| derailing | 14 | 0.06 |
+| **Total** | 232 | 100% |
+
 
 **Three hard cases**
 
@@ -129,25 +129,26 @@ Say so plainly — the disclosure is required, not penalised. -->
      been, and what you chose. These are worth more than the easy 190. -->
 
 **1.**
-> *The post:*
+> *The post:* "Discogs is how I do my 'crate digging' digitally"
 >
-> *Could have been:*
->
-> *I chose, because:*
+> *Could have been:* `Fluff` or `Substantive`
+> 
+> *I chose, because:* Decided on substantive as its a personal-experience statement, and not just a reaction.
 
 **2.**
-> *The post:*
+> *The post:* "I feel like you missed the point of what they were saying. I could be wrong, though."
 >
-> *Could have been:*
+> *Could have been:* `Fluff` or `Derailing`
 >
-> *I chose, because:*
+> *I chose, because:* It responds to another user, but gives no reasoning. Last sentence hedges it to the side of fluff rather than derailing.
+
 
 **3.**
-> *The post:*
+> *The post:* "For the last few years, for whatever reason, iris has always been on the radio at least twice a day. I hate that song so much, and its not like the goo goo dolls were ever that good to begin with outside of their hardcore albums but i genuinely don't understand how people like that song."
 >
-> *Could have been:*
+> *Could have been:* `Substantive` or `Derailing`
 >
-> *I chose, because:*
+> *I chose, because:* This is a rant that mostly says "I hate this song," but it does give context and a reason so I erred toward substantive.
 
 ---
 
