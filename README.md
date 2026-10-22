@@ -206,24 +206,25 @@ Original thread is titled "Streaming gave me every album ever made, and I stoppe
 
 ## Baseline vs. Trained
 
-<!-- Both models on the same posts. `python baseline.py --trained results.json`
-     prints this table for you. -->
+<!-- Both models on the same posts. `python baseline.py --trained results.json` prints this table for you. -->
 
 | Measure | Baseline | Trained | Difference |
 |---|---|---|---|
-| Overall accuracy |  |  |  |
-| Macro F1 |  |  |  |
-| F1 — `label_one` |  |  |  |
-| F1 — `label_two` |  |  |  |
+| Overall accuracy | 0.629 | 0.686 | +0.057 |
+| Macro F1 | 0.272 | 0.271 | -0.000 |
+| F1 — `derailing` | 0.000 | 0.000 | +0.000 |
+| F1 — `fluff` | 0.000 | 0.000 | +0.000 |
+| F1 — `substantive` | 0.815 | 0.814 | -0.001 |
 
 **What I predicted before I looked:**
 <!-- Milestone 1 asks you to write this BEFORE seeing the trained numbers. A
      prediction made afterwards isn't one. -->
+I expect the trained model to see a significant improvment in fluff prediction accuracy, and a minor improvment for derailing prediction accuracy.
 
 **What the gap actually means:**
 <!-- If the baseline matched your trained model, your fine-tuning added
      nothing — and that is a real finding, not a failure. Say it plainly. -->
-
+As it stands, the fine-tuning did not significantly impact accuracy for any label. The overall accuracy improved by 0.057, with a very slight loss to substantive labels of 0.001.
 
 
 ---
