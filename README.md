@@ -234,6 +234,17 @@ As it stands, the fine-tuning did not significantly impact accuracy for any labe
 <!-- Five criteria across three seeds. The notebook's section 6 prints the
      spread table; the Target and Verdict columns are yours. -->
 
+<!-- | Measure | Seed 25 | Seed 7 | Seed 2024 | Spread |
+|---|---|---|---|---|
+| Overall accuracy | 0.714 | 0.686 | 0.686 | 0.029 |
+| Macro F1 | 0.343 | 0.271 | 0.271 | 0.071 |
+| F1 — `fluff` | 0.200 | 0.000 | 0.000 | 0.200 |
+| F1 — `substantive` | 0.828 | 0.814 | 0.814 | 0.014 |
+| F1 — `derailing` | 0.000 | 0.000 | 0.000 | 0.000 |
+
+Accuracy moved 0.029 across seeds. Stable enough to trust. -->
+
+
 | Criterion | Target | Seed 42 | Seed 7 | Seed 2024 | Verdict |
 |---|---|---|---|---|---|
 | 1.  |  |  |  |  |  |
@@ -247,17 +258,15 @@ As it stands, the fine-tuning did not significantly impact accuracy for any labe
 <!-- ⚠️ TYPED AS A MARKDOWN TABLE. The notebook prints one ready to paste.
      An image of a matrix earns nothing. -->
 
-| true \ predicted |  |  |  |
+| true \ predicted | fluff | substantive | derailing |
 |---|---|---|---|
-| **** |  |  |  |
-| **** |  |  |  |
-| **** |  |  |  |
+| **fluff** | 1 | 8 | 0 |
+| **substantive** | 0 | 24 | 0 |
+| **derailing** | 0 | 2 | 0 |
+
 
 **My biggest off-diagonal number, and what it means:**
-<!-- Not "the model made mistakes" — WHICH boundary it didn't learn, and which
-     direction. "7 real analysis posts were called hot_take and only 3 went the
-     other way" is a direction, not just an error rate. -->
-
+8 real `fluff` posts were called `substantive`, and 0 real `substantive` posts were called `fluff`. When it comes to choosing between these labels, the model leans heavily toward `substantive`.
 
 
 ---
