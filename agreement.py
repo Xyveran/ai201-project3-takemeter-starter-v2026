@@ -62,14 +62,23 @@ def label_column(df, path):
     for name in LABEL_COLUMNS:
         if name in df.columns:
             return name
-    print(f"{path} has no label column. Looked for: {', '.join(LABEL_COLUMNS)}.",
-          file=sys.stderr)
+    print(
+        f"{path} has no label column. Looked for: {', '.join(LABEL_COLUMNS)}.",
+        file=sys.stderr,
+    )
     print(f"Found: {', '.join(df.columns)}", file=sys.stderr)
     if "text" in df.columns and "id" in df.columns:
-        print("That looks like the staff posts on their own — the labels are a", file=sys.stderr)
-        print("separate file. Pass both and they'll be joined on `id`:", file=sys.stderr)
-        print("  python agreement.py --staff-posts posts.csv --staff-labels labels.csv",
-              file=sys.stderr)
+        print(
+            "That looks like the staff posts on their own — the labels are a",
+            file=sys.stderr,
+        )
+        print(
+            "separate file. Pass both and they'll be joined on `id`:", file=sys.stderr
+        )
+        print(
+            "  python agreement.py --staff-posts posts.csv --staff-labels labels.csv",
+            file=sys.stderr,
+        )
     sys.exit(1)
 
 
@@ -78,17 +87,35 @@ def load(path, pd):
     if not Path(path).exists():
         print(f"No file at {path}.", file=sys.stderr)
         if "staff" in str(path):
-            print("That's the staff set. `data/staff_posts.csv` ships in the starter;", file=sys.stderr)
-            print("`data/staff_labels.csv` is the one your TF sends you once your own", file=sys.stderr)
-            print("labels are done. Ask in the help channel if you haven't been sent it.", file=sys.stderr)
+            print(
+                "That's the staff set. `data/staff_posts.csv` ships in the starter;",
+                file=sys.stderr,
+            )
+            print(
+                "`data/staff_labels.csv` is the one your TF sends you once your own",
+                file=sys.stderr,
+            )
+            print(
+                "labels are done. Ask in the help channel if you haven't been sent it.",
+                file=sys.stderr,
+            )
         else:
-            print("Make it by copying the staff set's posts into a CSV with a `text`", file=sys.stderr)
-            print("column and a `label` column, then labelling them yourself.", file=sys.stderr)
+            print(
+                "Make it by copying the staff set's posts into a CSV with a `text`",
+                file=sys.stderr,
+            )
+            print(
+                "column and a `label` column, then labelling them yourself.",
+                file=sys.stderr,
+            )
         sys.exit(1)
 
     df = pd.read_csv(path)
     if "text" not in df.columns:
-        print(f"{path} has no 'text' column. Found: {', '.join(df.columns)}", file=sys.stderr)
+        print(
+            f"{path} has no 'text' column. Found: {', '.join(df.columns)}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     column = label_column(df, path)
@@ -103,9 +130,18 @@ def load_pair(posts_path, labels_path, pd):
     for path, what in ((posts_path, "posts"), (labels_path, "labels")):
         if not Path(path).exists():
             print(f"No file at {path}.", file=sys.stderr)
-            print(f"That's the staff {what}. The posts ship in the starter under", file=sys.stderr)
-            print("data/staff_posts.csv; the labels are what your TF sends you once", file=sys.stderr)
-            print("your own are done. Ask in the help channel if you're missing either.", file=sys.stderr)
+            print(
+                f"That's the staff {what}. The posts ship in the starter under",
+                file=sys.stderr,
+            )
+            print(
+                "data/staff_posts.csv; the labels are what your TF sends you once",
+                file=sys.stderr,
+            )
+            print(
+                "your own are done. Ask in the help channel if you're missing either.",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
     posts = pd.read_csv(posts_path)
@@ -113,11 +149,17 @@ def load_pair(posts_path, labels_path, pd):
 
     for df, path, needed in ((posts, posts_path, "text"), (labels, labels_path, None)):
         if "id" not in df.columns:
-            print(f"{path} has no 'id' column, so the two files can't be joined.", file=sys.stderr)
+            print(
+                f"{path} has no 'id' column, so the two files can't be joined.",
+                file=sys.stderr,
+            )
             print(f"Found: {', '.join(df.columns)}", file=sys.stderr)
             sys.exit(1)
         if needed and needed not in df.columns:
-            print(f"{path} has no '{needed}' column. Found: {', '.join(df.columns)}", file=sys.stderr)
+            print(
+                f"{path} has no '{needed}' column. Found: {', '.join(df.columns)}",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
     column = label_column(labels, labels_path)
@@ -133,7 +175,10 @@ def load_pair(posts_path, labels_path, pd):
 
     if not rows:
         print(f"No `id` in {posts_path} matched one in {labels_path}.", file=sys.stderr)
-        print("They're meant to be the same set — check you were sent the pair that", file=sys.stderr)
+        print(
+            "They're meant to be the same set — check you were sent the pair that",
+            file=sys.stderr,
+        )
         print("go together.", file=sys.stderr)
         sys.exit(1)
     if unlabelled:
@@ -166,8 +211,7 @@ def shorten(text, width=70):
 
 def disagreement_table(disagreements):
     """The skeleton your README needs. The last column is yours to fill in."""
-    rows = ["| Post | Staff said | I said | My call, and why |",
-            "|---|---|---|---|"]
+    rows = ["| Post | Staff said | I said | My call, and why |", "|---|---|---|---|"]
     for row in disagreements:
         rows.append(
             f"| {shorten(row['text'])} | `{row['staff']}` | `{row['mine']}` |  |"
@@ -181,21 +225,34 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument("--staff-posts", default="data/staff_posts.csv",
-                        help="the staff posts your TF gives you")
-    parser.add_argument("--staff-labels", default="data/staff_labels.csv",
-                        help="the staff labels, joined to the posts on `id`")
-    parser.add_argument("--staff", default=None,
-                        help="both in one file, if you already have it that way")
-    parser.add_argument("--mine", default="my_staff_labels.csv",
-                        help="the same posts, labelled by you")
+    parser.add_argument(
+        "--staff-posts",
+        default="data/staff_posts.csv",
+        help="the staff posts your TF gives you",
+    )
+    parser.add_argument(
+        "--staff-labels",
+        default="data/staff_labels.csv",
+        help="the staff labels, joined to the posts on `id`",
+    )
+    parser.add_argument(
+        "--staff",
+        default=None,
+        help="both in one file, if you already have it that way",
+    )
+    parser.add_argument(
+        "--mine", default="my_staff_labels.csv", help="the same posts, labelled by you"
+    )
     parser.add_argument("--out", default="agreement_results.json")
     args = parser.parse_args()
 
     try:
         import pandas as pd
     except ImportError:
-        print("pandas isn't installed. Run: pip install -r requirements.txt", file=sys.stderr)
+        print(
+            "pandas isn't installed. Run: pip install -r requirements.txt",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     if args.staff:
@@ -208,7 +265,10 @@ def main():
     compared = len(matched) + len(disagreements)
     if not compared:
         print("No posts matched between the two files.", file=sys.stderr)
-        print("Posts are matched on their text, so it has to be pasted unchanged.", file=sys.stderr)
+        print(
+            "Posts are matched on their text, so it has to be pasted unchanged.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     rate = len(matched) / compared
@@ -238,17 +298,25 @@ def main():
         print('"Staff is right" every time is not adjudication. Some of these posts')
         print("were picked because they are genuinely ambiguous.")
 
-    Path(args.out).write_text(json.dumps({
-        "compared": compared,
-        "agreed": len(matched),
-        "agreement_rate": rate,
-        "disagreements": disagreements,
-        "staff_posts_not_in_mine": len(missing),
-    }, indent=2), encoding="utf-8")
+    Path(args.out).write_text(
+        json.dumps(
+            {
+                "compared": compared,
+                "agreed": len(matched),
+                "agreement_rate": rate,
+                "disagreements": disagreements,
+                "staff_posts_not_in_mine": len(missing),
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
     print(f"\nWrote {args.out}. Commit it.")
     print("\nThen sort each disagreement into one of three piles:")
-    print("  (a) the rule covered it and you applied it loosely — a consistency problem")
+    print(
+        "  (a) the rule covered it and you applied it loosely — a consistency problem"
+    )
     print("  (b) the rule genuinely doesn't say — a gap in the definitions")
     print("  (c) the rule is ambiguous here and your reading is defensible — argue it")
     print("\n(b) and (c) are the interesting ones, and (c) is a legitimate win.")

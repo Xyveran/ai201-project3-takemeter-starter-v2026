@@ -307,7 +307,7 @@ Accuracy moved 0.029 across seeds. Stable enough to trust. -->
      data/staff_taxonomy.md, not your own — so every argument below is made
      from those definitions and those decision rules. -->
 
-**Agreement rate:** ___ / 30 = ___%
+**Agreement rate:** 29 / 30 = 96.7%
 
 <!-- Nobody grades this number. A 60% who argues every disagreement from the
      stated rules beats a 95% who wrote "staff was right" nine times. Several
@@ -330,25 +330,15 @@ Accuracy moved 0.029 across seeds. Stable enough to trust. -->
      what you did across your own 200. -->
 
 **1.**
-> *The post:*
+> *The post:* "Three of us ran the same session on the same day, different shoes, within 10 seconds of each other over 5 miles. I'm not saying shoes do nothing, but whatever they do was smaller than the noise between three people."
 >
-> *Staff said / I said:*
+> *Staff said / I said:* analysis / hot_take
 >
-> *My call, and why:*
+> *My call, and why:* The analysis label requires a specific checkable fact that does the work in the argument. The evidence in this post doesn't support the conclusion. The only fact here is that three runners performed similarly on one day. Three runners having close times cannot differentiate a "shoes don't matter" conclusion from a "three people ran with similar effort" conclusion. The post states all runners finished within 10 seconds of each other. The idea of shoe effect being smaller than this 10-second spread can't be tested from this information.
 >
-> *Which pile:*
+> *Which pile:* (c) the rule is ambiguous here and my reading is defensible
 
-**2.**
-> *The post:*
->
-> *Staff said / I said:*
->
-> *My call, and why:*
->
-> *Which pile:*
-
-**What the pattern in my disagreements tells me:**
-
+**What the pattern in my disagreements tells me:** The one disagreement came from how I read analysis: staff checked whether a specific fact was present, and I checked whether it supported the conclusion.
 
 
 ---
