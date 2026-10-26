@@ -8,3 +8,7 @@
 Fluff: Offers an opinion, reaction, or comment about the dicussion topic without providing supporting reasoning, evidence, context, or a distinct argument, and without changing the subject.
 Substantive: Contributes relevant information, personal experience, specific examples, reasoning, or a question that develops the discussion topic or responds to another participant.
 Derailing: Shifts attention away from the discussion's central topic or argument by introducing an unrelated subject, targeting a person or group with a dismissive remark, or making a personal attack instead of addressing the topic of discussion.
+
+# Derailing: the post is aimed at a commenter, or is a dismissive or hostile comment about commenters. An opinion about an artist, however harsh, is not derailing.
+# Substantive: the post gives a reason, example, personal experience or context, or asks a question that seeks or adds information.
+# Fluff: everything else. That includes reactions, thanks, agreement, bare assertions and harsh opinions about an artist with no reason, and rhetorical or one-word questions.

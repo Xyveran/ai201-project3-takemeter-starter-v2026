@@ -360,39 +360,57 @@ My agreement report says I apply written rules consistently, but the baseline's 
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** I added 28 posts to the dataset that all belong under the 'derailing' label.
 
-**Which diagnosis pointed at it:**
+**Which diagnosis pointed at it:** The diagnosis of Criterion 4: `derailing` recall and F1 (0.000 / 0.000 in all three seeds, target 0.50 / 0.40). I believed that there was not enough data on the `derailing` label for the model to learn.
+
 
 ### Run Log — After
 
-| Criterion | Target | Seed 42 | Seed 7 | Seed 2024 | Verdict |
+| Criterion | Target | Seed 25 | Seed 7 | Seed 2024 | Verdict |
 |---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |
+| 1. Overall Accuracy | ≥ 0.80 | 0.615 | 0.615 | 0.615 | MISSED |
+| 2. F1 for Substantive and Fluff | ≥ 0.80; ≥ 0.65 | 0.762; 0.000 | 0.762; 0.000 | 0.762; 0.000 | MISSED |
+| 3. Macro F1 | ≥ 0.65 | 0.254 | 0.254 | 0.254 | MISSED |
+| 4. Recall and F1 for Derailing | ≥ 0.50; ≥ 0.40 | 0.000; 0.000 | 0.000; 0.000 | 0.000; 0.000 | MISSED |
+| 5. No label below 10% of dataset, substantive at most 65% | True | False | False | False | MET |
 
-**Did it help, and how do I know:**
+**Did it help, and how do I know:** With the additional labels, the share of `substantive` dropped to ~60.77% and the share of `derailing` rose to 16.15%. Plainly, that means criterion 5 gets to pass. However, it's apparent that the model learned to just go with `substantive` rather than learn any relationships between the posts and their labels. Performance for `derailing` and `fluff` flatlined across each seed, and all the positive metrics are directly tied to how many posts in test had the `substantive` label.
 
 <!-- If it didn't, say so. Relabelling that didn't help is a genuinely
      interesting result and earns full credit. -->
-
-
-
 ---
 
 ## What's Still Broken
 
 <!-- For each criterion still missed: what you'd do, and why you stopped. -->
 
+Criteria 1-4 are still missed in all three seeds. Only criterion 5 (dataset balance) is met, and it did not carry over into model performance. The current dataset has 260 posts (158 `substantive`, 60 `fluff`, 42 `derailing`). All three seeds returned identical numbers after the change (0.615 accuracy, 0.254 macro F1), which means the model is collapsing to `substantive` regardless of seed and is not learning anything from the text.
 
+**Criterion 1: Overall accuracy (0.615, target 0.80).**
+*What I'd do:* Cut `substantive` down by about 60 posts, from 158 to roughly 98, so it is about 49% of the data and always predicting it no longer wins. Raise epochs from 3 to 5 at the same learning rate so the model has time to move off the majority class. Accuracy should only be trusted once the model predicts more than one label. Right now 0.615 is just 24/39, the `substantive` share of the test split.
+*Why I stopped:* The unit asks for one improvement, and I spent it on `derailing` volume because that was my clearest diagnosis. Both of these changes are untested.
+
+**Criterion 2: F1 for `substantive` and `fluff` (0.762 / 0.000, targets 0.80 / 0.65).**
+*What I'd do:* Fix the `fluff` definition before adding any data. I would reread all 60 `fluff` posts, relabel or tighten the rule so that `fluff` means only unsupported reactions, then retrain. Substantive F1 fell from about 0.81 to 0.762, which only reflects the larger test split with more non-`substantive` posts and does not mean the model got worse.
+*Why I stopped:* Relabeling means rereading the whole dataset and rewriting the definition, and I did not want to change labels and data in the same run, because I would not be able to tell which one moved the numbers.
+
+**Criterion 3: Macro F1 (0.254, target 0.65).**
+*What I'd do:* Nothing separate. It is the average of three F1 scores, and two of them are 0.000. It cannot rise until `fluff` or `derailing` becomes learnable, so fixing criteria 2 and 4 fixes this one.
+*Why I stopped:* There is nothing to fix on its own.
+
+**Criterion 4: `derailing` recall and F1 (0.000 / 0.000, targets 0.50 / 0.40).**
+*What I'd do:* My diagnosis blamed too few examples, and this run weakens that. Training `derailing` went from 10 posts to about 38 and the model still predicted it zero times, with all 6 test `derailing` posts called `substantive`. So volume alone was not the cause. This may still be related to dataset balance though, with the majority representation still being held by `substantive` posts preventing the learning of other labels.
+*Why I stopped:* The 28 new posts were the whole improvement for this unit.
 
 **The gap between what I meant my labels to capture and what the model
-learned:**
-<!-- Two sentences. Your confusion matrix is the evidence. -->
+learned:** I meant for my labels to capture whether a post adds something to the discussion, takes it off topic, or only reacts to it. The model learned to go all-in on `substantive` every time, as the matrix below shows: 9 of 9 `fluff` and 6 of 6 `derailing` posts were called `substantive`.
 
+| true \ predicted | fluff | substantive | derailing |
+|---|---|---|---|
+| **fluff** | 0 | 9 | 0 |
+| **substantive** | 0 | 24 | 0 |
+| **derailing** | 0 | 6 | 0 |
 
 
 <!-- ═════════════════════════════════════════════════════════════════════
