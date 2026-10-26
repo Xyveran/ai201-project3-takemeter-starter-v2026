@@ -241,17 +241,16 @@ As it stands, the fine-tuning did not significantly impact accuracy for any labe
 | F1 — `fluff` | 0.200 | 0.000 | 0.000 | 0.200 |
 | F1 — `substantive` | 0.828 | 0.814 | 0.814 | 0.014 |
 | F1 — `derailing` | 0.000 | 0.000 | 0.000 | 0.000 |
+-->
 
-Accuracy moved 0.029 across seeds. Stable enough to trust. -->
-
-
-| Criterion | Target | Seed 42 | Seed 7 | Seed 2024 | Verdict |
+| Criterion | Target | Seed 25 | Seed 7 | Seed 2024 | Verdict |
 |---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |
+| 1. Overall Accuracy | ≥ 0.80 | 0.714 | 0.686 | 0.686 | MISSED |
+| 2. F1 for Substantive and Fluff | ≥ 0.80; ≥ 0.65 | 0.828; 0.200 | 0.814; 0.000 | 0.814; 0.000 | MISSED |
+| 3. Macro F1 | ≥ 0.65 | 0.343 | 0.271 | 0.271 | MISSED |
+| 4. Recall and F1 for Derailing | ≥ 0.50; ≥ 0.40 | 0.000; 0.000 | 0.000; 0.000 | 0.000; 0.000 | MISSED |
+| 5. No label below 10% of dataset, substantive at most 65% | True | False | False | False | MISSED |
+
 
 ### Confusion matrix
 
@@ -278,11 +277,11 @@ Accuracy moved 0.029 across seeds. Stable enough to trust. -->
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1. Overall Accuracy | ≥ 0.80 | MISSED |
+| 2. F1 for Substantive and Fluff | ≥ 0.80; ≥ 0.65 | MISSED |
+| 3. Macro F1 | ≥ 0.65 | MISSED |
+| 4. Recall and F1 for Derailing | ≥ 0.50; ≥ 0.40 | MISSED |
+| 5. No label below 10% of dataset, substantive at most 65% | True | MISSED |
 
 **Diagnoses**
 
@@ -295,6 +294,22 @@ Accuracy moved 0.029 across seeds. Stable enough to trust. -->
      have that can tell a LABELLING problem from a MODEL problem, and this
      section is graded on whether you used it that way. -->
 
+**Criterion 1: Overall accuracy (0.714 / 0.686 / 0.686, target 0.80).**
+*Cause: the model collapsed to the majority label.* In seeds 7 and 2024 it predicted `substantive` for all 35 test posts, so accuracy equals the share of `substantive` in the test split (24/35 = 0.686). Seed 25's 0.714 is one extra correct `fluff` post. The model never beat the always-guess-`substantive` baseline (0.629 to 0.686), so fine-tuning added almost nothing. The training set is 68% `substantive` and 162 examples over 3 epochs gave the model little reason to leave that default.
+
+**Criterion 2: F1 for `substantive` and `fluff` (substantive 0.828 / 0.814 / 0.814, fluff 0.200 / 0.000 / 0.000).**
+*Cause: too few `fluff` examples to learn from (42 in train), and no pressure to use them.* The `substantive` half of this criterion is met in every seed. The `fluff` half is missed. The confusion matrices show the failure goes one way: 8 or 9 of 9 real `fluff` posts were called `substantive`, and no `substantive` post was ever called `fluff`. Seed 25 got 1 of 9 and the other two seeds got 0. That swing from one post means the model has no stable `fluff` signal. The confidence data agrees: accuracy was 1.0 in the most confident third of predictions and only 0.18 to 0.27 in the least confident third. The model is unsure on exactly the posts it gets wrong.
+
+My agreement report says I apply written rules consistently, but the baseline's per-post predictions (baseline_results.json, same 35 test posts) suggest my `fluff` definition is still too loose. Under the staff taxonomy I matched 29 of 30 (96.7%), and the one disagreement (the shoe-running post, `analysis` vs `hot_take`) is pile (c), a defensible reading of an ambiguous rule. So I found no pile (a) cases: no sign I applied a written boundary two different ways. But the staff set uses a different taxonomy, so it cannot test my `fluff` rule. Reading the 9 test `fluff` posts shows why that matters. Only two are pure reactions ("who?", "Oh man, it would have been monstrous!"). The other seven make claims or take positions: "DMB has no redeeming qualities", "You don't need to break into any market if you're already in the biggest market", "I mean... Rage Against the Machine was huge in the USA", "They know the song. They're not going to recognize him on the street". Next to them, "Dave sells out pretty big places in Europe??" is labelled `substantive`, and "Honest answer is because they are all pretty mediocre" is `derailing`. A model cannot separate those from the text alone, and I'd have trouble doing it from my own definitions. The zero-shot baseline, which was given my definitions, called six of the nine `substantive` and three `derailing`, and got none right. So the `fluff` boundary is a real contributor here, not only the class imbalance.
+
+**Criterion 3: Macro F1 (0.343 / 0.271 / 0.271, target 0.65).**
+*Cause: follows from criteria 2 and 4.* Macro F1 averages three labels, and two of them (`fluff` and `derailing`) score at or near 0. With `substantive` at about 0.81, the macro score cannot exceed about 0.34 until at least one minority label becomes learnable. This is a symptom, not a separate problem, so I cam't fix it separately.
+
+**Criterion 4: `derailing` recall and F1 (0.000 / 0.000 in all three seeds, target 0.50 / 0.40).**
+*Cause: too few examples.* This is the clearest case, and it supports my hypothesis. There are 14 `derailing` posts in total, giving 10 in train, 2 in val and 2 in test. The model predicted `derailing` zero times in every seed. Recall on a 2-post test set can only be 0, 0.5 or 1.0, so this criterion could not be measured reliably even with a better model. A second, smaller contributor is that `derailing` is a mixed class. My examples include personal attacks ("random internet know-it-all"), topic policing ("You are off topic"), and generalizations about groups ("The same people who whine about..."). With 10 examples the model has no way to find a common pattern, and I haven't shown that one exists.
+
+**Criterion 5: Dataset balance (`derailing` 6%, `substantive` 68%).**
+*Cause: too few examples, and I knew this before training.* The counts fail both halves directly: `derailing` is 14/232 (6%, below the 10% floor of 24) and `substantive` is 68% (above the 65% cap). My criteria.md predicted this and planned to add at least 10 more `derailing` posts. This criterion is checked before training, so it is the one miss I can fix with data alone, and it is the likely root of criteria 3 and 4.
 
 
 ---
