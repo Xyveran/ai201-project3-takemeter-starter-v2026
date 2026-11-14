@@ -447,6 +447,18 @@ learned:** I meant for my labels to capture whether a post adds something to the
      Do not delete and recreate this repository.
      ═════════════════════════════════════════════════════════════════════ -->
 
+
+## Capstone
+
+**The Shape**
+Shape C — Extend one capability. The post classifier originally sought to classify reddit posts into one three labels: `substantive`, `fluff`, or `derailing`. The system before this point only processes the posts in isolation. Accurately determining a `derailing` or `fluff` label needs context, so the goal of this extension is to enable a user to provide this context.  
+
+**What's Out of Scope**:
+(1) Automatic context retrieval: the user supplies the context themselves, so I'm not scraping Reddit or looking up the parent post and thread from a URL.
+(2) Full thread context: the extension takes one piece of user-provided context per post, not whole reply chains or other comments in the thread.
+(3) Changing the labels or relabeling data: the label set stays `substantive`, `fluff`, and `derailing`, and I'm not rebuilding the staff-labeled dataset to include context. <!--Deployment on Render is also kept to a single web service, with no authentication, rate limiting, database persistence, or monitoring.-->
+
+
 ---
 
 📖 **How to run this project: [RUNNING.md](RUNNING.md)**
