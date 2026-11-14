@@ -1,0 +1,12 @@
+{
+  "id2label": {
+    "0": "fluff",
+    "1": "substantive",
+    "2": "derailing"
+  },
+  "label2id": {
+    "fluff": 0,
+    "substantive": 1,
+    "derailing": 2
+  }
+}
