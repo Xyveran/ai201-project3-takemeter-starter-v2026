@@ -28,3 +28,12 @@ Thumbs.db
 # NOTE: results.json, results_three_seeds.json and baseline_results.json are
 # deliberately NOT ignored. They're evidence the run actually happened, and
 # they're part of what gets graded. Commit them.
+
+# Fine-tuned PyTorch model and ONNX intermediate (hundreds of MB, rebuildable).
+# Only render_model/ (the quantized model) gets committed.
+my-finetuned-distilbert/
+onnx-temp/
+render_model/vocab.txt
+render_model/ort_config.json
+render_model/special_tokens_map.json
+render_model/tokenizer_config.json
