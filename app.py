@@ -1,4 +1,6 @@
+import hmac
 import json
+import os
 import time
 import traceback
 from pathlib import Path
@@ -6,10 +8,10 @@ from typing import Any, Optional
 
 import numpy as np
 import onnxruntime as ort
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from tokenizers import Tokenizer
 
@@ -142,6 +144,20 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
             f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in errors
         )
     return await request_validation_exception_handler(request, exc)
+
+
+@app.get("/logs")
+def get_logs(x_admin_token: Optional[str] = Header(default=None), limit: Optional[int] = None):
+    """Download the audit log as JSON lines. Disabled unless ADMIN_TOKEN is set on the server.
+    The log holds user text, so it is token-protected. The file lives on Render's ephemeral
+    disk and is lost on redeploy or spin-down: pull it soon after use (see pull_logs.py)."""
+    expected = os.getenv("ADMIN_TOKEN")
+    if not expected:
+        raise HTTPException(status_code=404, detail="Not Found")
+    if not x_admin_token or not hmac.compare_digest(x_admin_token, expected):
+        raise HTTPException(status_code=401, detail="Invalid or missing X-Admin-Token")
+    lines = [json.dumps(e, ensure_ascii=False) for e in audit.read_entries(limit)]
+    return Response("\n".join(lines) + ("\n" if lines else ""), media_type="application/x-ndjson")
 
 
 @app.get("/")
