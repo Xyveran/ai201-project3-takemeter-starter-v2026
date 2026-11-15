@@ -91,6 +91,40 @@ whether you hit them:
 
 ---
 
+# Capstone Criteria
+
+## 1. Malformed Inputs 
+
+**Requests with malformed inputs return a 400-class error code instead of reaching the model in 10/10 calls.**
+
+**Why this target:** A malformed request (empty or whitespace-only text, missing fields, wrong types) is a failure that a caller can cause on purpose, so it can be tested every time and anything below 10/10 means a gap in validation. If bad input reaches the model it produces a confident label for text that isn't a post, which is a waste of resources. A 400 also tells the caller the fault is theirs, where a 500 would look like a bug in the service.
+
+## 2. Logged Results
+
+**Successful service calls log a timestamp, client_id, input_text, chosen_label, and confidence in 10/10 calls.**
+
+**Why this target:** The log is the only way I can see what the classifier did after deployment, such as which labels it picks and how confident it is, so a successful call missing any of these fields leaves an irreparable hole. Each field answers a question I'll have later: client_id for who, input_text for what, and chosen_label and confidence for how the model behaved. It has to be 10/10 because a call that goes unlogged leaves no trace to find afterward.
+
+## 3. Response Latency
+
+**The deployed `/predict` endpoint responds in under 1 second in 9 of 10 calls.**
+
+**Why this target:** The service runs on a Render instance that hibernates when idle, so the first call after some time needs to endure a cold-start. I've chosen one slow call in ten because a take-quality check that regularly takes longer than 1 second could deter someone from using the service.
+
+## 4. Timeout Handling
+
+**When a request exceeds the time limit, the service returns an error message and stays up in 5 of 5 forced timeouts.**
+
+**Why this target:** A timeout is a failure I can trigger on purpose, so it can be tested every time and 5 of 5 is a fair bar. A cold-starting instance is the most likely place for a real timeout, and a crash there would take the endpoint down for the next caller too. I want a readable message with the service still answering afterward.
+
+## 5. Cost per Run
+
+**Each prediction costs less than $0.01 in 10 of 10 calls.**
+
+**Why this target:** The model is a quantized ONNX file served from my own instance, so a prediction has no per-call API charge and its cost is only a small slice of compute time. If a call ever approaches a cent, something's gone wrong. 10 of 10 is therefore the right bar, because I expect this criterion to hold every time.
+
+---
+
 <!-- ─────────────────────────────────────────────────────────────────────────
      UNIT 6 — read this before you change anything above.
 
@@ -121,3 +155,4 @@ whether you hit them:
      A number you missed stays where it is, gets diagnosed, and gets a fix
      attempted. That's where the points are.
      ───────────────────────────────────────────────────────────────────────── -->
+
