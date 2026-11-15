@@ -77,7 +77,7 @@ def _base(
     request_id: str,
     endpoint: str,
     method: str,
-    user_ip: str,
+    client_id: str,
     status_code: int,
     latency_ms: float,
     cold_start: bool,
@@ -90,8 +90,7 @@ def _base(
         "request_id": request_id,
         "endpoint": endpoint,
         "method": method,
-        "user_ip": user_ip,
-        "client_id": hash_ip(user_ip),
+        "client_id": client_id,
         "status_code": status_code,
         "latency_ms": round(latency_ms, 2),
         "cold_start": cold_start,
@@ -113,7 +112,7 @@ def log_success(
     request_id: str,
     endpoint: str,
     method: str,
-    user_ip: str,
+    client_id: str,
     latency_ms: float,
     cold_start: bool,
     input_text: str,
@@ -133,7 +132,7 @@ def log_success(
         request_id=request_id,
         endpoint=endpoint,
         method=method,
-        user_ip=user_ip,
+        client_id=client_id,
         status_code=status_code,
         latency_ms=latency_ms,
         cold_start=cold_start,
@@ -162,7 +161,7 @@ def log_failure(
     request_id: str,
     endpoint: str,
     method: str,
-    user_ip: str,
+    client_id: str,
     latency_ms: float,
     cold_start: bool,
     status_code: int,
@@ -177,7 +176,7 @@ def log_failure(
         request_id=request_id,
         endpoint=endpoint,
         method=method,
-        user_ip=user_ip,
+        client_id=client_id,
         status_code=status_code,
         latency_ms=latency_ms,
         cold_start=cold_start,
@@ -220,8 +219,8 @@ def read_entries(limit: int | None = None) -> list[dict]:
     return entries[-limit:] if limit else entries
 
 
-def entries_for(user_ip: str) -> list[dict]:
-    return [e for e in read_entries() if e.get("user_ip") == user_ip]
+def entries_for(client_id: str) -> list[dict]:
+    return [e for e in read_entries() if e.get("client_id") == client_id]
 
 
 def entries_for_request(request_id: str) -> list[dict]:

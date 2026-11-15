@@ -25,7 +25,10 @@ def fetch(url: str, token: str) -> list[dict]:
     req = urllib.request.Request(f"{url.rstrip('/')}/logs", headers={"X-Admin-Token": token})
     with urllib.request.urlopen(req, timeout=120) as r:  # long timeout: free tier may be waking up
         text = r.read().decode("utf-8")
-    return [json.loads(line) for line in text.splitlines() if line.strip()]
+    entries = [json.loads(line) for line in text.splitlines() if line.strip()]
+    for e in entries:
+        e.pop("user_ip", None)  # older deployments logged raw IPs; never save them to the repo
+    return entries
 
 
 def main() -> int:
@@ -47,6 +50,8 @@ def main() -> int:
     existing = []
     if args.out.exists():
         existing = [json.loads(l) for l in args.out.read_text(encoding="utf-8").splitlines() if l.strip()]
+        for e in existing:
+            e.pop("user_ip", None)
 
     seen, merged = set(), []
     for e in existing + fetched:

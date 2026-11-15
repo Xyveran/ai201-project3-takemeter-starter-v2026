@@ -90,7 +90,7 @@ async def audit_middleware(request: Request, call_next):
         request_id=request_id,
         endpoint=request.url.path,
         method=request.method,
-        user_ip=client_ip(request),
+        client_id=audit.hash_ip(client_ip(request)),  # raw IP is never logged or passed on
         cold_start=cold_start,
     )
 
