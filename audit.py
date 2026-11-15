@@ -165,7 +165,7 @@ def log_failure(
     latency_ms: float,
     cold_start: bool,
     status_code: int,
-    error_type: str,  # "validation" for bad input, "server_error" for a crash
+    error_type: str,  # "validation" for bad input, "server_error" for a crash, "timeout" for a 504
     reason: str,
     input_text: str | None = None,
     input_topic: str | None = None,

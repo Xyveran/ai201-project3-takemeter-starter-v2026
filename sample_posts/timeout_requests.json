@@ -1,0 +1,14 @@
+[
+  {"id": 1, "name": "forced_timeout_1", "expected_status": 504, "delay_s": 7,
+   "body": {"text": "Honestly the second album is better than the debut.", "topic": "Vinyl vs streaming sound quality"}},
+  {"id": 2, "name": "forced_timeout_2", "expected_status": 504, "delay_s": 7,
+   "body": {"text": "lol this thread is wild", "topic": "Vinyl vs streaming sound quality"}},
+  {"id": 3, "name": "forced_timeout_3", "expected_status": 504, "delay_s": 7,
+   "body": {"text": "Lossless streaming is indistinguishable from vinyl in blind tests.", "topic": "Vinyl vs streaming sound quality"}},
+  {"id": 4, "name": "forced_timeout_4", "expected_status": 504, "delay_s": 7,
+   "body": {"text": "You all just argue about nothing.", "topic": "Vinyl vs streaming sound quality"}},
+  {"id": 5, "name": "forced_timeout_5", "expected_status": 504, "delay_s": 7,
+   "body": {"text": "Mastering matters more than the format.", "topic": "Vinyl vs streaming sound quality"}},
+  {"id": 6, "name": "service_still_up_after_timeouts", "expected_status": 200,
+   "body": {"text": "Mastering matters more than the format.", "topic": "Vinyl vs streaming sound quality"}}
+]

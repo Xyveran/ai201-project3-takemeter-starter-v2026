@@ -1,3 +1,4 @@
+import asyncio
 import hmac
 import json
 import os
@@ -20,6 +21,8 @@ import audit
 MODEL_DIR = Path(__file__).parent / "render_model"
 MODEL_PATH = MODEL_DIR / "model_quantized.onnx"
 AUDITED_PATHS = {"/predict"}  # health checks on "/" are not logged
+REQUEST_TIMEOUT_S = 5.0  # /predict requests slower than this get a 504 (capstone criterion 3/4)
+MAX_TEST_DELAY_S = 30.0  # upper bound for the X-Test-Delay hook
 
 app = FastAPI()
 
@@ -95,7 +98,23 @@ async def audit_middleware(request: Request, call_next):
     )
 
     try:
-        response = await call_next(request)
+        response = await asyncio.wait_for(call_next(request), timeout=REQUEST_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        # The sync endpoint's worker thread can't be cancelled and finishes in the
+        # background, but the caller gets a clear message instead of hanging.
+        audit.log_failure(
+            **common,
+            latency_ms=(time.perf_counter() - start) * 1000,
+            status_code=504,
+            error_type="timeout",
+            reason=f"exceeded {REQUEST_TIMEOUT_S:g}s limit",
+            input_text=request.state.audit.get("input_text"),
+            input_topic=request.state.audit.get("input_topic"),
+        )
+        response = JSONResponse(
+            {"detail": f"Request timed out after {REQUEST_TIMEOUT_S:g}s, please retry"},
+            status_code=504,
+        )
     except Exception as exc:
         audit.log_failure(
             **common,
@@ -146,15 +165,19 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     return await request_validation_exception_handler(request, exc)
 
 
+def valid_admin_token(token: Optional[str]) -> bool:
+    expected = os.getenv("ADMIN_TOKEN")
+    return bool(expected and token and hmac.compare_digest(token, expected))
+
+
 @app.get("/logs")
 def get_logs(x_admin_token: Optional[str] = Header(default=None), limit: Optional[int] = None):
     """Download the audit log as JSON lines. Disabled unless ADMIN_TOKEN is set on the server.
     The log holds user text, so it is token-protected. The file lives on Render's ephemeral
     disk and is lost on redeploy or spin-down: pull it soon after use (see pull_logs.py)."""
-    expected = os.getenv("ADMIN_TOKEN")
-    if not expected:
+    if not os.getenv("ADMIN_TOKEN"):
         raise HTTPException(status_code=404, detail="Not Found")
-    if not x_admin_token or not hmac.compare_digest(x_admin_token, expected):
+    if not valid_admin_token(x_admin_token):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Admin-Token")
     lines = [json.dumps(e, ensure_ascii=False) for e in audit.read_entries(limit)]
     return Response("\n".join(lines) + ("\n" if lines else ""), media_type="application/x-ndjson")
@@ -167,11 +190,21 @@ def health():
 
 # no async def since session.run blocks, so FastAPI runs it in a threadpool.
 @app.post("/predict")
-def predict(request: Request, body: TextRequest):
+def predict(
+    request: Request,
+    body: TextRequest,
+    x_test_delay: Optional[float] = Header(default=None),
+    x_admin_token: Optional[str] = Header(default=None),
+):
     topic = (body.topic or "").strip()
     audit_details = request.state.audit
     audit_details["input_text"] = body.text
     audit_details["input_topic"] = topic or None
+
+    # Test hook for forcing timeouts: sleep before predicting. Ignored unless the
+    # caller presents the admin token, so the public can't tie up the worker.
+    if x_test_delay and valid_admin_token(x_admin_token):
+        time.sleep(min(max(x_test_delay, 0.0), MAX_TEST_DELAY_S))
 
     if not body.text.strip():
         audit_details["reason"] = "empty text"
