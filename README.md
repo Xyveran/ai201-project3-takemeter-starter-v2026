@@ -459,6 +459,13 @@ Shape C — Extend one capability. The post classifier originally sought to clas
 (3) Changing the labels or relabeling data: the label set stays `substantive`, `fluff`, and `derailing`, and I'm not rebuilding the staff-labeled dataset to include context. <!--Deployment on Render is also kept to a single web service, with no authentication, rate limiting, database persistence, or monitoring.-->
 
 
+<!-- 
+curl.exe -X POST https://ai201-project3-takemeter-starter-v2026.onrender.com/predict -H "Content-Type: application/json" -d '{\"text\":\"hello\",\"topic\":\"optional\"}' 
+
+curl.exe -X POST https://ai201-project3-takemeter-starter-v2026.onrender.com/predict -H "Content-Type: application/json" -d "@sample_posts/sample1.json"
+
+-->
+
 ---
 
 📖 **How to run this project: [RUNNING.md](RUNNING.md)**

@@ -37,3 +37,6 @@ render_model/vocab.txt
 render_model/ort_config.json
 render_model/special_tokens_map.json
 render_model/tokenizer_config.json
+
+# Runtime audit logs
+# logs/
