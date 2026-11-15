@@ -36,7 +36,21 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, OSError, ValueError):
         pass
 
-DEFAULT_URL = "https://ai201-project3-takemeter-starter-v2026.onrender.com"
+def load_dotenv(path: Path = Path(__file__).parent / ".env") -> None:
+    """Minimal .env reader so ADMIN_TOKEN works without exporting it first."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        key, sep, value = line.strip().partition("=")
+        if sep and key and not key.startswith("#"):
+            os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+load_dotenv()
+
+DEFAULT_URL ="https://ai201-project3-takemeter-starter-v2026.onrender.com"
 SAMPLE_DIR = Path(__file__).parent / "sample_posts"
 
 
@@ -118,6 +132,9 @@ def main() -> int:
         print("No JSON files found.", file=sys.stderr)
         return 2
     target = args.url.rstrip("/") + args.endpoint
+    if not args.admin_token:
+        print("WARNING: no ADMIN_TOKEN (env, .env or --admin-token). Entries with delay_s will NOT "
+              "stall the server, so forced timeouts will not happen.\n", file=sys.stderr)
 
     results, problems = [], 0
     print(f"Target: {target}\n")
