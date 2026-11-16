@@ -515,11 +515,16 @@ The classifier is a quantized ONNX model that runs on CPU inside my own Render s
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Requests with malformed inputs return a 400-class error code instead of reaching the model in 10/10 calls. |  10 of 10 | /10 | /10 | /10 | MISSED |
-| 2. Successful service calls log a timestamp, client_id, input_text, chosen_label, and confidence in 10/10 calls. | 10 of 10 | /10 | /10 | /10 | MET |
-| 3. The deployed `/predict` endpoint responds in under 1 second in 9 of 10 calls. | 9 of 10 | /10 | /10 | /10 | MET |
-| 4. When a request exceeds the time limit, the service returns an error message and stays up in 5 of 5 forced timeouts. | 5 of 5 | /5 | /5 | /5 | MET |
-| 5. Each prediction costs less than $0.01 in 10 of 10 calls. | 10 of 10 | /10 | /10 | /10 | MET |
+| 1. Requests with malformed inputs return a 400-class error code instead of reaching the model in 10/10 calls. |  10 of 10 | 1/10 | 1/10 | 1/10 | MISSED |
+| 2. Successful service calls log a timestamp, client_id, input_text, chosen_label, and confidence in 10/10 calls. | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
+| 3. The deployed `/predict` endpoint responds in under 1 second in 9 of 10 calls. | 9 of 10 | 10/10 | 10/10 | 10/10 | MET |
+| 4. When a request exceeds the time limit, the service returns an error message and stays up in 5 of 5 forced timeouts. | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Each prediction costs less than $0.01 in 10 of 10 calls. | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
+
+**Criterion 1: Requests with malformed inputs return a 400-class error code instead of reaching the model in 10/10 calls.**
+Multiple issues with this miss. Most of the malformed inputs are not currently being marked as errors and subsequently aren't returning error codes for these malformed inputs. Most notably, two requests from the `malformed_requests.json` set don't even appear in the logs. Case #4 `lone_surrogate_escape` contains `\\ud83d` parsing into an unencodable string which caused an Internal Server Error, and case #10 `markup_and_json_payload_as_text` which got its return body overridden with html. The amendment to resolve this miss is in `app.py` input validation, and adjusting the error logging to capture the additional edge cases.
+
+Logs From a Single Run
 
 *Success Test Set*
 ```json

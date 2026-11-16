@@ -2,18 +2,18 @@ import asyncio
 import hmac
 import json
 import os
+import re
 import time
 import traceback
+import unicodedata
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, NamedTuple, Optional
 
 import numpy as np
 import onnxruntime as ort
-from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel
 from tokenizers import Tokenizer
 
 import audit
@@ -23,6 +23,10 @@ MODEL_PATH = MODEL_DIR / "model_quantized.onnx"
 AUDITED_PATHS = {"/predict"}  # health checks on "/" are not logged
 REQUEST_TIMEOUT_S = 5.0  # /predict requests slower than this get a 504 (capstone criterion 3/4)
 MAX_TEST_DELAY_S = 30.0  # upper bound for the X-Test-Delay hook
+MAX_BODY_BYTES = 32 * 512  # larger request bodies are rejected unparsed
+MAX_TEXT_CHARS = 1200  # the model only reads 256 tokens (~1.5k chars);
+MAX_TOPIC_CHARS = 200
+MAX_LOGGED_CHARS = 1000  # rejected input is truncated in the audit log
 
 app = FastAPI()
 
@@ -60,9 +64,88 @@ except (FileNotFoundError, KeyError):
 INPUT_NAMES = {i.name for i in session.get_inputs()}
 
 
-class TextRequest(BaseModel):
+ALLOWED_KEYS = {"text", "topic"}
+# Characters that render blank but are not stripped by str.strip() (Hangul fillers, braille blank).
+INVISIBLE_CHARS = {chr(0x115F), chr(0x1160), chr(0x3164), chr(0xFFA0), chr(0x2800)}
+ALLOWED_CONTROL_CHARS = {chr(9), chr(10), chr(13)}  # tab, newline, carriage return
+HTML_TAG_RE = re.compile(r"</?\s*[a-zA-Z][^>]*>")
+
+
+class TextRequest(NamedTuple):
     text: str
-    topic: Optional[str] = None  # optional context; ignored when absent or blank
+    topic: Optional[str]
+
+
+def _reject(request: Request, reason: str, text: Any = None, topic: Any = None) -> HTTPException:
+    """Record why a request was refused (and a bounded copy of its input) for the audit log."""
+    audit_details = request.state.audit
+    audit_details["reason"] = reason
+    for key, value in (("input_text", text), ("input_topic", topic)):
+        if isinstance(value, str):
+            # backslashreplace keeps lone surrogates from crashing the UTF-8 log write
+            audit_details[key] = value[:MAX_LOGGED_CHARS].encode("utf-8", "backslashreplace").decode("utf-8")
+    return HTTPException(status_code=400, detail=reason)
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict:
+    keys = [k for k, _ in pairs]
+    dupes = sorted({k for k in keys if keys.count(k) > 1})
+    if dupes:
+        raise ValueError(f"duplicate key(s): {', '.join(dupes)}")
+    return dict(pairs)
+
+
+def _field_problem(name: str, value: str, max_chars: int) -> Optional[str]:
+    if len(value) > max_chars:
+        return f"{name} too long ({len(value)} chars, max {max_chars})"
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        return f"{name} contains invalid unicode (lone surrogate)"
+    if any(unicodedata.category(c) == "Cc" and c not in ALLOWED_CONTROL_CHARS for c in value):
+        return f"{name} contains control characters"
+    if HTML_TAG_RE.search(value):
+        return f"{name} contains markup"
+    return None
+
+
+async def parse_body(request: Request) -> TextRequest:
+    """Strictly validate the /predict body. Every failure is a 400 and is audit-logged."""
+    raw = await request.body()
+    if len(raw) > MAX_BODY_BYTES:
+        raise _reject(request, f"request body too large ({len(raw)} bytes, max {MAX_BODY_BYTES})")
+    try:
+        data = json.loads(raw.decode("utf-8"), object_pairs_hook=_reject_duplicate_keys)
+    except UnicodeDecodeError:
+        raise _reject(request, "body is not valid UTF-8")
+    except ValueError as exc:  # JSONDecodeError and duplicate keys
+        raise _reject(request, f"invalid JSON: {exc}")
+    if not isinstance(data, dict):
+        raise _reject(request, "body must be a JSON object")
+    unknown = sorted(set(data) - ALLOWED_KEYS)
+    if unknown:
+        raise _reject(request, f"unknown field(s): {', '.join(unknown)}", data.get("text"), data.get("topic"))
+
+    text, topic = data.get("text"), data.get("topic")
+    if not isinstance(text, str):
+        raise _reject(request, "text is required and must be a string", None, topic)
+    if topic is not None and not isinstance(topic, str):
+        raise _reject(request, "topic must be a string or null", text)
+
+    for name, value, limit in (("text", text, MAX_TEXT_CHARS), ("topic", topic, MAX_TOPIC_CHARS)):
+        if value is None:
+            continue
+        problem = _field_problem(name, value, limit)
+        if problem:
+            raise _reject(request, problem, text, topic)
+
+    # Needs at least one letter or digit once invisible characters are removed.
+    # This rejects empty, whitespace-only, zero-width, emoji-only and punctuation-only text.
+    if not any(c.isalnum() and c not in INVISIBLE_CHARS for c in text):
+        raise _reject(request, "text has no readable content", text, topic)
+    if topic is not None and topic.strip() and not any(c.isalnum() and c not in INVISIBLE_CHARS for c in topic):
+        raise _reject(request, "topic has no readable content", text, topic)
+    return TextRequest(text=text, topic=topic)
 
 
 _served_first_request = False  # a fresh process (e.g. Render waking from idle) is a cold start
@@ -156,13 +239,11 @@ async def audit_middleware(request: Request, call_next):
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(request: Request, exc: RequestValidationError):
-    # Malformed body (missing/non-string text, bad JSON): record why, then return FastAPI's default 422.
-    errors = exc.errors()
+    # Remaining FastAPI validation (e.g. a non-numeric X-Test-Delay header): 400, not 422.
+    reason = "; ".join(f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors())
     if hasattr(request.state, "audit"):
-        request.state.audit["reason"] = "; ".join(
-            f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in errors
-        )
-    return await request_validation_exception_handler(request, exc)
+        request.state.audit["reason"] = reason
+    return JSONResponse({"detail": reason}, status_code=400)
 
 
 def valid_admin_token(token: Optional[str]) -> bool:
@@ -192,7 +273,7 @@ def health():
 @app.post("/predict")
 def predict(
     request: Request,
-    body: TextRequest,
+    body: TextRequest = Depends(parse_body),
     x_test_delay: Optional[float] = Header(default=None),
     x_admin_token: Optional[str] = Header(default=None),
 ):
@@ -205,10 +286,6 @@ def predict(
     # caller presents the admin token, so the public can't tie up the worker.
     if x_test_delay and valid_admin_token(x_admin_token):
         time.sleep(min(max(x_test_delay, 0.0), MAX_TEST_DELAY_S))
-
-    if not body.text.strip():
-        audit_details["reason"] = "empty text"
-        raise HTTPException(status_code=400, detail="text must not be empty")
 
     t0 = time.perf_counter()
     if topic:
