@@ -236,6 +236,188 @@ README has a block to fill in for each one.
 
 ---
 
+## Capstone: the deployed service
+
+The capstone wraps the trained model in a FastAPI web service, deploys it to
+Render, logs every request, and tests it with batches of sample posts. The
+commands below are in the order they were first run. They are PowerShell; on
+macOS/Linux swap the activate line and `$env:X = "..."` for
+`source .venv/bin/activate` and `export X=...`.
+
+| Requirements file | Used for |
+|---|---|
+| `requirements-dev.txt` | Your machine: training, baseline, ONNX export and quantization |
+| `requirements.txt` | Render only: `fastapi`, `uvicorn`, `onnxruntime`, `tokenizers`, `numpy`, `pydantic` |
+
+The Python version is pinned in `.python-version`.
+
+### 1. Install and activate
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt     # training + export tooling
+pip install -r requirements.txt         # the same packages Render installs
+```
+
+### 2. Export and quantize the fine-tuned model
+
+The notebook saves the fine-tuned PyTorch model to `./my-finetuned-distilbert`.
+`run_onnx_export.py` converts it to ONNX (`./onnx-temp`), then quantizes it to
+INT8 and writes the deployable files to `./render_model`.
+
+```powershell
+python run_onnx_export.py
+```
+
+Check that `render_model/model_quantized.onnx` is about 65 MB (down from about
+256 MB) and that `tokenizer.json` and `config.json` are there. The service
+loads those files at start-up.
+
+**Deploying before the real model exists?** `make_temp_model.py` writes a tiny
+stand-in model into `render_model/` with the same inputs and outputs, so the
+deployment can be tested end to end. Its predictions are meaningless, and
+re-running `run_onnx_export.py` overwrites it.
+
+```powershell
+python make_temp_model.py
+```
+
+### 3. Run the service locally
+
+```powershell
+$env:ADMIN_TOKEN = "choose-any-secret"   # enables /logs and the timeout test hook
+uvicorn app:app --host 127.0.0.1 --port 8000
+```
+
+Open <http://127.0.0.1:8000/docs> for the interactive page, or call it directly:
+
+```powershell
+curl http://127.0.0.1:8000/                       # health check -> {"status": "ok"}
+
+curl -X POST http://127.0.0.1:8000/predict `
+  -H "Content-Type: application/json" `
+  -d '{"text": "The bridge modulates up a whole step.", "topic": "Song structure"}'
+```
+
+`topic` is the optional user-supplied context (the capstone extension). Omit it
+and the post is classified on its own.
+
+Each request is also appended to `logs/use.jsonl` and echoed to stdout.
+Optional environment variables:
+
+| Variable | Default | Effect |
+|---|---|---|
+| `ADMIN_TOKEN` | unset | Unset disables `/logs` (404) and the test-delay hook. Set it to turn them on |
+| `LOG_INPUT_TEXT` | `1` | `0` keeps raw post text out of the logs (hash and length are still logged) |
+| `LOG_STDOUT` | `1` | `0` stops echoing entries to stdout |
+| `LOW_CONFIDENCE_THRESHOLD` | `0.6` | Below this, a prediction is logged as `low_confidence` |
+
+### 4. Deploy to Render
+
+Create a **Web Service** from this GitHub repo, then:
+
+| Setting | Value |
+|---|---|
+| Build command | `pip install -r requirements.txt` |
+| Start command | `uvicorn app:app --host 0.0.0.0 --port $PORT` |
+| Environment variable | `ADMIN_TOKEN` = a secret you choose |
+
+`render_model/` is committed to the repo, so deploying is a push:
+
+```powershell
+git add render_model app.py requirements.txt
+git commit -m "Deploy"
+git push origin main
+```
+
+The first request after a spin-down is a **cold start** (the free tier sleeps
+when idle) and takes noticeably longer. The live URL is the `DEFAULT_URL` at the
+top of `send_batch.py` and `pull_logs.py`.
+
+### 5. Put the admin token in `.env`
+
+`send_batch.py` reads `ADMIN_TOKEN` from a `.env` file in the repo root, so you
+don't have to export it each session. `.env` is in `.gitignore`. Never commit it.
+
+```
+ADMIN_TOKEN=the-same-value-you-set-on-render
+```
+
+`pull_logs.py` does **not** read `.env`. Set the variable in the shell first
+(step 7).
+
+### 6. Send the sample posts
+
+`sample_posts/` holds the request sets:
+
+| File | What it holds |
+|---|---|
+| `sample_requests.json` | Well-formed posts, with and without a `topic`. All expected to succeed |
+| `malformed_requests.json` | Bad inputs, each with an `expected_status` (400-class). Tests validation |
+| `timeout_requests.json` | Entries with `delay_s` that stall the server to force the 5 s timeout. Needs the admin token |
+| `live_log.jsonl` | The audit log pulled from Render (step 7) |
+
+`send_batch.py` posts them to the service and prints one line per request:
+`ok`, `FAIL` (5xx or network error) or `MISMATCH` (status differed from
+`expected_status`). Exit code is 1 if anything was not `ok`.
+
+```powershell
+python send_batch.py                                          # every sample_posts/*.json
+python send_batch.py sample_posts/sample_requests.json        # one file
+python send_batch.py sample_posts/malformed_requests.json
+python send_batch.py sample_posts/timeout_requests.json       # needs ADMIN_TOKEN
+python send_batch.py --url http://127.0.0.1:8000              # against your local server
+python send_batch.py --delay 0.5 --repeat 5 --out batch.json  # pace, repeat, save results
+python send_batch.py --help
+```
+
+The Run Log in the README is three runs of each criterion, so run the relevant
+file three times.
+
+### 7. Pull the logs
+
+The service exposes the audit log at `/logs`, protected by the admin token.
+`pull_logs.py` downloads it and **merges** it into `sample_posts/live_log.jsonl`,
+deduplicating, so repeated pulls keep what's already saved.
+
+```powershell
+$env:ADMIN_TOKEN = "the-same-value-you-set-on-render"
+python pull_logs.py
+python pull_logs.py --out other.jsonl --url http://127.0.0.1:8000
+```
+
+> **Pull soon after you use the service.** Render's free-tier disk is wiped on
+> spin-down or redeploy, and the log goes with it.
+
+| Error | Meaning |
+|---|---|
+| `HTTP 404` | `ADMIN_TOKEN` isn't set on Render |
+| `HTTP 401` | The token doesn't match the one on Render |
+| Hangs a minute | The service is waking from a cold start. Wait |
+
+Raw IP addresses are stripped from anything saved to the repo.
+
+### 8. Commit the evidence
+
+```powershell
+git add sample_posts/live_log.jsonl README.md RUNNING.md
+git commit -m "Capstone: logs and run log"
+git push origin main
+```
+
+### Capstone commands at a glance
+
+| Command | What it does |
+|---|---|
+| `python run_onnx_export.py` | Fine-tuned model to quantized ONNX in `render_model/` |
+| `python make_temp_model.py` | Stand-in model for testing a deployment |
+| `uvicorn app:app --port 8000` | Run the service locally |
+| `python send_batch.py [files]` | Send sample posts to the service |
+| `python pull_logs.py` | Download the live audit log into `sample_posts/` |
+
+---
+
 ## Which piece goes with which milestone
 
 ### Unit 5 — the build
