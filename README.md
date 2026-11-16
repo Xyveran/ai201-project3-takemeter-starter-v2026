@@ -628,6 +628,20 @@ Through the additional validation, most of the malformed inputs were denied entr
 
 Case 10 `markup_and_json_payload_as_text`, while still returning a 400-class error code does not log and has its body replaced with html. The benchmark of the criteria is returning the error code and not going to a model, which I believe makes this case still pass, but the failure to log this event means that future malformed input of this type can go unnoticed. I'm not sure what the cause or solution to this malformed input case, but in the future I would look into researching likely causes and determining at exactly which point in the pipeline does this input cause the 403 error.
 
+**What It Costs**
+*Per-run number:* A prediction costs $0.00 in billed money and about 53 ms of CPU time (warm mean total latency of 52.93 ms, 69.56 ms including the cold start). The model is a quantized ONNX file running on CPU inside my own Render service, so there is no per-token or per-call charge.
+
+*How I measured it:* The server times every request with `time.perf_counter()` in the FastAPI middleware and writes it to the audit log as `latency_ms`. I sent ten requests to the live Render URL, pulled the log with `pull_logs.py`, and averaged `latency_ms` over the nine processed requests (see the table above). These are server-side times and exclude network travel.
+
+*A hundred people a day:* Assuming each person classifies 10 posts a day (my assumption, not a measurement), that is 100 × 10 = 1,000 requests a day. At 0.053 s each that is 1,000 × 0.053 s = 53 s of compute a day, which fits easily on the free tier at $0. If I moved to an always-on paid instance to avoid cold starts, I would expect to pay about $7 a month (the Starter price), or $7 ÷ 30 days ÷ 1,000 requests ≈ $0.0002 per prediction, still far under the $0.01 target in criterion 5.
+
+*What I would do next:* I would first find out where the case 10 `markup_and_json_payload_as_text` input is being intercepted and make it write an audit entry, because it is the one malformed input that currently fails silently and I cannot fix or monitor what I cannot see. I would do that before anything else because every other measure here, from the cost numbers to the criteria results, depends on the log being complete.
+
+**How I Used AI**
+*Generating the `sample_posts/` JSON files.* I used AI to draft the request sets I send to the service: well-formed posts with and without a `topic`, a malformed-input set (empty text, control characters, a lone surrogate, duplicate keys, oversized bodies, markup payloads) and a timeout set. Each malformed entry carries an `expected_status`, so `send_batch.py` can flag a `MISMATCH` instead of me eyeballing responses. I wrote the criteria first and chose which cases mattered, and the set did its job by exposing that nine of ten malformed inputs were reaching the model on the first run.
+
+*Creating the temp model in `make_temp_model.py`.* I needed to deploy and test the Render service before the real fine-tuned model was exported, so Claude wrote a script that builds a tiny stand-in ONNX model and tokenizer with the same inputs and outputs (`input_ids` and `attention_mask` in, three logits out). It let me debug the setup and build, the start command and the logging on Render without waiting on the export.
+
 ---
 
 📖 **How to run this project: [RUNNING.md](RUNNING.md)**
